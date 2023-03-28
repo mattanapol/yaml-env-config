@@ -1,7 +1,6 @@
 package main
 
 import (
-	"strings"
 	"testing"
 )
 
@@ -17,31 +16,15 @@ func TestYamlToEnv(t *testing.T) {
 		},
 	}
 
-	expected := `APP_NAME=pim-service
-APP_PAGE_SIZE=10
-LOGGING_LEVEL=debug
-LOGGING_JSON_FORMAT=false
-`
-
 	actual := yamlToEnv(input, "")
-	if !compareEnvStrings(expected, actual) {
-		t.Errorf("Expected:\n%v\nActual:\n%v", expected, actual)
-	}
+	assertEqual(t, actual["APP_NAME"], "pim-service")
+	assertEqual(t, actual["APP_PAGE_SIZE"], "10")
+	assertEqual(t, actual["LOGGING_LEVEL"], "debug")
+	assertEqual(t, actual["LOGGING_JSON_FORMAT"], "false")
 }
 
-func compareEnvStrings(s1, s2 string) bool {
-	s1Lines := strings.Split(strings.Trim(s1, "\n"), "\n")
-	s2Lines := strings.Split(strings.Trim(s2, "\n"), "\n")
-
-	if len(s1Lines) != len(s2Lines) {
-		return false
+func assertEqual(t *testing.T, expected, actual interface{}) {
+	if expected != actual {
+		t.Errorf("Expected:\n%v\nActual:\n%v", expected, actual)
 	}
-
-	for _, line := range s1Lines {
-		if !strings.Contains(strings.Join(s2Lines, "\n"), line) {
-			return false
-		}
-	}
-
-	return true
 }

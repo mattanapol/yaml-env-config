@@ -7,6 +7,7 @@ import (
 	"os"
 	"path"
 	"reflect"
+	"sort"
 	"strings"
 
 	"gopkg.in/yaml.v3"
@@ -14,10 +15,11 @@ import (
 
 func main() {
 	prefix := flag.String("prefix", "", "Prefix for the environment variables")
+	outputFormat := flag.String("format", "env", "Output format (env, yaml)")
 	flag.Parse()
 
 	if flag.NArg() < 1 {
-		fmt.Println("Usage: yaml2env [--prefix prefix] <input_file>")
+		fmt.Println("Usage: yaml2env [--prefix prefix] [--format format] <input_file>")
 		os.Exit(1)
 	}
 
@@ -33,11 +35,19 @@ func main() {
 		panic(err)
 	}
 
-	envContent := yamlToEnv(input, *prefix)
+	envMap := yamlToEnv(input, *prefix)
 	// get file name without extension
 	fileName := strings.TrimSuffix(path.Base(inputFilePath), path.Ext(inputFilePath))
-	outputFilePath := path.Base(fileName) + ".env"
-	err = os.WriteFile(outputFilePath, []byte(envContent), 0644)
+	var outputFilePath, content string
+	keyValue := createSortedKeyValueFromMap(envMap)
+	if *outputFormat == "yaml" {
+		outputFilePath = fileName + "_env.yaml"
+		content = mapToYaml(keyValue)
+	} else {
+		outputFilePath = fileName + ".env"
+		content = mapToEnv(keyValue)
+	}
+	err = os.WriteFile(outputFilePath, []byte(content), 0644)
 	if err != nil {
 		panic(err)
 	}
@@ -45,8 +55,8 @@ func main() {
 	fmt.Println("Transformed YAML to ENV successfully!")
 }
 
-func yamlToEnv(input map[string]interface{}, parentKey string) string {
-	var buffer bytes.Buffer
+func yamlToEnv(input map[string]interface{}, parentKey string) map[string]string {
+	var result = make(map[string]string)
 	for key, value := range input {
 		key = strings.ReplaceAll(key, "-", "_")
 		if parentKey != "" {
@@ -57,14 +67,58 @@ func yamlToEnv(input map[string]interface{}, parentKey string) string {
 		switch reflect.ValueOf(value).Kind() {
 		case reflect.Map:
 			subMap := value.(map[string]interface{})
-			buffer.WriteString(strings.TrimRight(yamlToEnv(subMap, key), "\n") + "\n\n")
+			// append the result of the submap to the result
+			for k, v := range yamlToEnv(subMap, key) {
+				result[k] = v
+			}
 		default:
 			// if value is nil, we set it to an empty string
 			if value == nil {
 				value = ""
 			}
-			buffer.WriteString(fmt.Sprintf("%s=%v\n", key, value))
+			result[key] = fmt.Sprintf("%v", value)
 		}
 	}
+	return result
+}
+
+func mapToEnv(input []KeyValue) string {
+	var buffer bytes.Buffer
+	for _, entry := range input {
+		buffer.WriteString(fmt.Sprintf("%s=%v\n", entry.Key, entry.Value))
+	}
 	return buffer.String()
+}
+
+func mapToYaml(input []KeyValue) string {
+	var buffer bytes.Buffer
+	for _, entry := range input {
+		buffer.WriteString(fmt.Sprintf("%s: \"%v\"\n", entry.Key, entry.Value))
+	}
+	return buffer.String()
+}
+
+func createSortedKeyValueFromMap(input map[string]string) []KeyValue {
+	// Extract keys from map
+	var keys []string
+	for k := range input {
+		keys = append(keys, k)
+	}
+
+	// Sort keys alphabetically
+	sort.Strings(keys)
+
+	var result []KeyValue
+	for _, key := range keys {
+		result = append(result, KeyValue{
+			Key:   key,
+			Value: input[key],
+		})
+	}
+	return result
+}
+
+type KeyValue struct {
+	Key   string
+	Value string
 }

@@ -29,6 +29,10 @@ The output environment file will be created with the same name as the input file
 
 ### Example
 ```bash
+go run main.go example.yaml
+```
+or
+```bash
 ./yaml2env --prefix MY_PREFIX example.yaml
 ```
 
