@@ -1,0 +1,26 @@
+app:
+  name: service
+  page-size: 10
+
+logging:
+  level: debug
+  json-format: false
+
+server:
+  run-mode: debug
+  http-port: 8000
+  read-timeout: 60
+  write-timeout: 60
+
+aws:
+  enabled: true
+  default-region: "ap-southeast-1"
+  secret-access-key:
+  access-key-id:
+  sns:
+    product-topic-arn: "arn:aws:sns:ap-southeast-1:xxxxxx:qa-product-ES-notification.fifo"
+    bulk-import-product-topic-arn: "arn:aws:sns:ap-southeast-1:xxxxxx:dev-pim-service-product-bulk-import.fifo"
+  s3:
+    bulk-import:
+      bucket-name: "development-service"
+      file-path: "bulk-import"
