@@ -15,7 +15,7 @@ import (
 
 func main() {
 	prefix := flag.String("prefix", "", "Prefix for the environment variables")
-	outputFormat := flag.String("format", "env", "Output format (env, yaml)")
+	outputFormat := flag.String("format", "yaml", "Output format (env, yaml)")
 	flag.Parse()
 
 	if flag.NArg() < 1 {
@@ -40,12 +40,12 @@ func main() {
 	fileName := strings.TrimSuffix(path.Base(inputFilePath), path.Ext(inputFilePath))
 	var outputFilePath, content string
 	keyValue := createSortedKeyValueFromMap(envMap)
-	if *outputFormat == "yaml" {
-		outputFilePath = fileName + "_env.yaml"
-		content = mapToYaml(keyValue)
-	} else {
+	if *outputFormat == "env" {
 		outputFilePath = fileName + ".env"
 		content = mapToEnv(keyValue)
+	} else {
+		outputFilePath = fileName + "_env.yaml"
+		content = mapToYaml(keyValue)
 	}
 	err = os.WriteFile(outputFilePath, []byte(content), 0644)
 	if err != nil {
